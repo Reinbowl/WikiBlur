@@ -1,0 +1,1335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>WikiBlur — Daily Image Challenge</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  /* ── Reset ─────────────────────────────────────────────── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  /* ── Design tokens ─────────────────────────────────────── */
+  :root {
+    --bg:      #0c0c0f;
+    --surface: #14141a;
+    --border:  #2a2a38;
+    --accent:  #e8ff47;
+    --text:    #f0f0f0;
+    --muted:   #6e6e80;
+    --correct: #47ff8a;
+    --wrong:   #ff4f4f;
+    --r:       9px;
+  }
+
+  /* ── Viewport shell ────────────────────────────────────────
+     html + body together form an exact 100dvh column.
+     dvh (dynamic viewport height) accounts for mobile
+     browser chrome (address bar showing/hiding).
+     overflow: hidden on both prevents ANY scroll.
+     touch-action: manipulation disables double-tap zoom.
+  ──────────────────────────────────────────────────────────── */
+  html, body {
+    height: 100%;
+    overflow: hidden;
+    overscroll-behavior: none;
+  }
+
+  body {
+    /* solid colour — no texture, no pseudo-element noise */
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    display: flex;
+    flex-direction: column;
+    /* disables double-tap zoom on iOS/Android */
+    touch-action: manipulation;
+    /* prevent tap highlight flash on mobile */
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* ── No header — removed (date lives in intro screen) ──── */
+
+  .daily-tag {
+    font-family: 'DM Mono', monospace;
+    font-size: .85rem;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    border: 1px solid var(--border);
+    padding: 4px 12px;
+    border-radius: 99px;
+  }
+
+  /* ── Main ───────────────────────────────────────────────────
+     Fills remaining height.
+     min-height: 0 is required so that flex children can shrink
+     below their intrinsic content size (critical for no-scroll).
+  ──────────────────────────────────────────────────────────── */
+  main {
+    flex: 1 1 0;
+    min-height: 0;
+    width: 100%;
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 10px 16px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* ── Screens ────────────────────────────────────────────────
+     All three screens share the same flex slot.
+     None of them scroll — content must fit.
+  ──────────────────────────────────────────────────────────── */
+  #intro-screen,
+  #game-screen,
+  #results-screen {
+    flex: 1 1 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;   /* NO overflow-y: auto — content must fit */
+  }
+
+  /* Game screen stacks its children vertically */
+  #game-screen { gap: 8px; }
+
+  /* Intro / results centre their content */
+  #intro-screen,
+  #results-screen {
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    gap: 12px;
+  }
+
+  /* ── Error banner ──────────────────────────────────────── */
+  .error-banner {
+    display: none;
+    flex: 0 0 auto;
+    background: rgba(255,79,79,.08);
+    border: 1px solid var(--wrong);
+    border-radius: var(--r);
+    padding: 8px 14px;
+    font-size: .8rem;
+    color: var(--wrong);
+    line-height: 1.45;
+  }
+
+  /* ── Status bar ─────────────────────────────────────────── */
+  .status-bar {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .lives { display: flex; gap: 4px; }
+  .heart {
+    font-size: 1.1rem;
+    transition: transform .3s, opacity .3s;
+  }
+  .heart.lost { opacity: .18; transform: scale(.8); }
+
+  .score-pill {
+    font-family: 'DM Mono', monospace;
+    font-size: .72rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 99px;
+    padding: 3px 11px;
+    color: var(--accent);
+  }
+  .blur-badge {
+    margin-left: auto;
+    font-family: 'DM Mono', monospace;
+    font-size: .65rem;
+    color: var(--muted);
+  }
+
+  /* ── Category strip ─────────────────────────────────────── */
+  .category-strip {
+    flex: 0 0 auto;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+    padding: 7px 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .category-strip .label {
+    font-size: .6rem;
+    text-transform: uppercase;
+    letter-spacing: .12em;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+  .category-strip .cat-name {
+    font-weight: 700;
+    color: var(--accent);
+    font-size: .85rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* ── Progress dots ──────────────────────────────────────── */
+  .progress-dots {
+    flex: 0 0 auto;
+    display: flex;
+    gap: 4px;
+    justify-content: center;
+    align-items: center;
+  }
+  .dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--border);
+    transition: background .3s;
+    flex-shrink: 0;
+  }
+  .dot.done-correct { background: var(--correct); }
+  .dot.done-wrong   { background: var(--wrong); }
+  .dot.current      { background: var(--accent); }
+
+  /* ── Image arena ────────────────────────────────────────────
+     This is the one flexible element — it grows and shrinks
+     to fill whatever space the fixed-height rows leave behind.
+  ──────────────────────────────────────────────────────────── */
+  .image-arena {
+    flex: 1 1 0;
+    min-height: 0;
+    position: relative;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  #blur-canvas {
+    width: 100%; height: 100%;
+    display: block;
+    object-fit: cover;
+  }
+
+  .image-overlay {
+    position: absolute; inset: 0;
+    background: linear-gradient(to top, rgba(12,12,15,.55) 0%, transparent 50%);
+    pointer-events: none;
+  }
+
+  .blur-level-badge {
+    position: absolute;
+    top: 8px; right: 8px;
+    font-family: 'DM Mono', monospace;
+    font-size: .62rem;
+    letter-spacing: .1em;
+    background: rgba(12,12,15,.8);
+    border: 1px solid var(--border);
+    border-radius: 99px;
+    padding: 3px 9px;
+  }
+
+  /* Loading overlay */
+  .loading-overlay {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 10px;
+    background: var(--surface);
+    z-index: 2;
+  }
+  .spinner {
+    width: 28px; height: 28px;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin .7s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-overlay p {
+    font-family: 'DM Mono', monospace;
+    font-size: .68rem;
+    color: var(--muted);
+    text-align: center;
+    max-width: 220px;
+    line-height: 1.5;
+  }
+
+  /* Result flash */
+  .result-flash {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(2.5rem, 8vw, 5rem);
+    letter-spacing: 3px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .15s;
+  }
+  .result-flash.correct { color: var(--correct); }
+  .result-flash.wrong   { color: var(--wrong); }
+  .result-flash.show    { opacity: 1; }
+
+  /* ── Options grid ───────────────────────────────────────── */
+  .options-grid {
+    flex: 0 0 auto;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+  }
+
+  .option-btn {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+    padding: 9px 12px;
+    text-align: left;
+    cursor: pointer;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: .8rem;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    transition: border-color .15s, background .15s;
+    position: relative;
+    overflow: hidden;
+    -webkit-user-select: none;
+    user-select: none;
+    /* min-height keeps buttons stable even with 1-line titles */
+    min-height: 42px;
+  }
+  .option-btn::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: var(--accent);
+    opacity: 0;
+    transition: opacity .15s;
+  }
+  .option-btn:hover:not(:disabled)::before { opacity: .04; }
+  .option-btn:hover:not(:disabled) { border-color: #3a3a4a; }
+  .option-btn:disabled { cursor: default; }
+
+  .option-key {
+    font-family: 'DM Mono', monospace;
+    font-size: .6rem;
+    color: var(--muted);
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    width: 20px; height: 20px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    transition: background .15s, color .15s;
+    position: relative; z-index: 1;
+  }
+  .option-label {
+    position: relative; z-index: 1;
+    line-height: 1.2;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .option-btn.correct-ans { border-color: var(--correct); background: rgba(71,255,138,.06); }
+  .option-btn.correct-ans .option-key { background: var(--correct); color: #000; border-color: var(--correct); }
+  .option-btn.wrong-ans   { border-color: var(--wrong);   background: rgba(255,79,79,.06); }
+  .option-btn.wrong-ans   .option-key { background: var(--wrong); color: #fff; border-color: var(--wrong); }
+  .option-btn.dim         { opacity: .35; }
+
+  /* ── Hint bar ───────────────────────────────────────────── */
+  .hint-bar {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 28px;
+  }
+  .hint-text {
+    font-size: .72rem;
+    color: var(--muted);
+    line-height: 1.35;
+    flex: 1;
+    /* clamp to one line so it never expands the layout */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .hint-text strong { color: var(--text); }
+
+  .reveal-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 99px;
+    color: var(--muted);
+    font-family: 'DM Sans', sans-serif;
+    font-size: .68rem;
+    padding: 4px 12px;
+    cursor: pointer;
+    transition: border-color .15s, color .15s;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .reveal-btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+  .reveal-btn:disabled { opacity: .28; cursor: default; }
+
+  /* ── Next button ────────────────────────────────────────── */
+  /* display:none by default; JS sets display:flex when needed */
+  .next-btn {
+    display: none;
+    flex: 0 0 auto;
+    width: 100%;
+    background: var(--accent);
+    border: none;
+    border-radius: var(--r);
+    color: #0c0c0f;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 700;
+    font-size: .9rem;
+    padding: 12px;
+    cursor: pointer;
+    letter-spacing: .04em;
+    transition: opacity .15s;
+    justify-content: center;
+    align-items: center;
+  }
+  .next-btn:hover { opacity: .88; }
+
+  /* ── Intro screen ───────────────────────────────────────── */
+  .intro-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(2.6rem, 9vw, 5rem);
+    letter-spacing: 3px;
+    line-height: 1;
+    color: var(--accent);
+    flex-shrink: 0;
+  }
+  .intro-title span { color: var(--text); }
+
+  .intro-body {
+    color: var(--muted);
+    font-size: 1rem;
+    line-height: 1.55;
+    max-width: 380px;
+    flex-shrink: 0;
+  }
+
+  /* how-to: shrinks gracefully on small screens */
+  .how-to {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+    padding: 12px 16px;
+    text-align: left;
+    width: 100%;
+    max-width: 420px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex-shrink: 1;
+    min-height: 0;
+  }
+  .how-to-row {
+    display: flex;
+    align-items: baseline;
+    gap: 9px;
+    font-size: .92rem;
+    line-height: 1.45;
+    color: var(--muted);
+  }
+  .how-to-row .icon { flex-shrink: 0; }
+  .how-to-row strong { color: var(--text); }
+
+  .start-btn {
+    background: var(--accent);
+    border: none;
+    border-radius: var(--r);
+    color: #0c0c0f;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 700;
+    font-size: .95rem;
+    padding: 13px 42px;
+    cursor: pointer;
+    letter-spacing: .04em;
+    transition: opacity .15s;
+    flex-shrink: 0;
+  }
+  .start-btn:hover { opacity: .88; }
+
+  /* ── Results screen ─────────────────────────────────────── */
+  .result-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(2.2rem, 6vw, 3.6rem);
+    letter-spacing: 2px;
+    line-height: 1;
+    flex-shrink: 0;
+  }
+  .result-score-big {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(4rem, 14vw, 8rem);
+    color: var(--accent);
+    line-height: 1;
+    flex-shrink: 0;
+  }
+  .result-sub {
+    color: var(--muted);
+    font-size: .8rem;
+    max-width: 320px;
+    line-height: 1.5;
+    flex-shrink: 0;
+  }
+  .share-btn {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: .85rem;
+    font-weight: 600;
+    padding: 11px 26px;
+    cursor: pointer;
+    transition: border-color .15s;
+    flex-shrink: 0;
+  }
+  .share-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .share-notice {
+    font-family: 'DM Mono', monospace;
+    font-size: .65rem;
+    color: var(--correct);
+    letter-spacing: .08em;
+    height: 1rem;
+    flex-shrink: 0;
+  }
+
+  /* ── Responsive: narrow phones (<400px) ─────────────────── */
+  @media (max-width: 400px) {
+    header          { padding: 8px 12px; }
+    main            { padding: 8px 10px; }
+    #game-screen    { gap: 6px; }
+    .options-grid   { gap: 5px; }
+    .option-btn     { padding: 8px 10px; font-size: .75rem; min-height: 38px; }
+  }
+
+  /* ── Responsive: landscape / short viewport (<620px tall) ─ */
+  @media (max-height: 620px) {
+    header          { padding: 6px 16px; }
+    main            { padding: 6px 12px; }
+    #game-screen    { gap: 5px; }
+    .category-strip { padding: 5px 12px; }
+    .options-grid   { gap: 4px; }
+    .option-btn     { padding: 6px 10px; min-height: 34px; }
+    .hint-bar       { min-height: 22px; }
+    /* on very short screens the hint text is decorative — hide it */
+    .hint-text      { display: none; }
+    #intro-screen   { gap: 8px; }
+    .how-to         { gap: 5px; padding: 8px 12px; }
+    .how-to-row     { font-size: .78rem; }
+    .intro-body     { display: none; } /* tight — body text sacrificed */
+  }
+
+  /* ── Desktop: wide layout ───────────────────────────────── */
+  @media (min-width: 700px) {
+    #game-screen      { gap: 10px; }
+    .option-btn       { font-size: .85rem; padding: 11px 16px; min-height: 46px; }
+    .options-grid     { gap: 8px; }
+    .hint-text        { white-space: normal; } /* allow wrapping on desktop */
+  }
+
+  /* ── Animations ─────────────────────────────────────────── */
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(5px); }
+    to   { opacity: 1; transform: none; }
+  }
+  .fade-in { animation: fadeIn .28s ease forwards; }
+
+  @keyframes shake {
+    0%,100% { transform: translateX(0); }
+    20%,60% { transform: translateX(-5px); }
+    40%,80% { transform: translateX(5px); }
+  }
+  .shake { animation: shake .3s ease; }
+</style>
+</head>
+<body>
+
+<main>
+  <div class="error-banner" id="error-banner"></div>
+
+  <!-- ═══ INTRO SCREEN ══════════════════════════════════════ -->
+  <div id="intro-screen">
+    <div class="intro-title">Wiki<span>Blur</span></div>
+    <div class="daily-tag" id="date-tag">Loading…</div>
+    <p class="intro-body">
+      A new Wikipedia category every day. Identify blurry images before you run out of lives.
+      Everyone worldwide gets the same challenge.
+    </p>
+    <div class="how-to">
+      <div class="how-to-row"><span class="icon">🌫️</span><div><strong>Spot the blur</strong> — guess the Wikipedia article from a blurred image.</div></div>
+      <div class="how-to-row"><span class="icon">📈</span><div><strong>Escalating difficulty</strong> — Rounds 1–3 Easy, 4–6 Medium, 7–8 Hard.</div></div>
+      <div class="how-to-row"><span class="icon">💡</span><div><strong>Reveal</strong> — spend 5 pts to reduce blur on medium/hard rounds.</div></div>
+      <div class="how-to-row"><span class="icon">❤️</span><div><strong>3 lives</strong> — a wrong guess costs a life. Lose all three and it's over.</div></div>
+      <div class="how-to-row"><span class="icon">📅</span><div><strong>Daily reset</strong> — same category worldwide. New challenge tomorrow.</div></div>
+    </div>
+    <button class="start-btn" id="start-btn">Start Today's Challenge</button>
+  </div>
+
+  <!-- ═══ GAME SCREEN ═══════════════════════════════════════ -->
+  <div id="game-screen" style="display:none;">
+    <div class="status-bar fade-in">
+      <div class="lives" id="lives-display"></div>
+      <div class="score-pill">Score: <span id="score-val">0</span></div>
+      <div class="blur-badge" id="blur-label">🟢 Easy</div>
+    </div>
+
+    <div class="category-strip fade-in">
+      <span class="label">Today's Category</span>
+      <span class="cat-name" id="category-display">—</span>
+    </div>
+
+    <div class="progress-dots fade-in" id="progress-dots"></div>
+
+    <div class="image-arena fade-in">
+      <canvas id="blur-canvas" width="600" height="338"></canvas>
+      <div class="image-overlay"></div>
+      <div class="blur-level-badge" id="blur-level-badge">Easy</div>
+
+      <div class="loading-overlay" id="loading-overlay">
+        <div class="spinner"></div>
+        <p id="loading-msg">Finding today's category…</p>
+        <p id="loading-sub" style="font-size:.65rem;opacity:.5;max-width:260px;text-align:center;line-height:1.4;"></p>
+      </div>
+
+      <div class="result-flash" id="result-flash"></div>
+    </div>
+
+    <div class="options-grid" id="options-grid"></div>
+
+    <div class="hint-bar">
+      <p class="hint-text" id="hint-text">Choose the correct article from the options above.</p>
+      <button class="reveal-btn" id="reveal-btn">🔍 Reveal (-5 pts)</button>
+    </div>
+
+    <button class="next-btn" id="next-btn">Next Round →</button>
+  </div>
+
+  <!-- ═══ RESULTS SCREEN ════════════════════════════════════ -->
+  <div id="results-screen" style="display:none;">
+    <div class="result-title" id="result-title">Game Over</div>
+    <div class="result-score-big" id="result-score-big">0</div>
+    <p class="result-sub" id="result-sub"></p>
+    <div class="progress-dots" id="result-dots"></div>
+    <button class="share-btn" id="share-btn">📋 Copy Result</button>
+    <div class="share-notice" id="share-notice"></div>
+  </div>
+</main>
+
+<script>
+/* ══════════════════════════════════════════════════════════
+   CONFIG
+══════════════════════════════════════════════════════════ */
+const TOTAL_ROUNDS  = 8;
+const MAX_LIVES     = 3;
+const REVEAL_COST   = 5;
+
+// Blur difficulty per round index (0-based):
+// Rounds 0-2 → easy (LV3), Rounds 3-5 → medium (LV2), Rounds 6-7 → hard (LV1)
+const ROUND_BLUR_LEVEL = [3, 3, 3, 2, 2, 2, 1, 1];
+
+// Points earned for a correct answer at each blur level (higher difficulty = more points)
+const POINTS_PER_LV = { 1: 15, 2: 10, 3: 5 };
+
+// Minimum pool needed:
+//   TOTAL_ROUNDS unique targets, plus 3 extras that are never targets
+//   so the final round always has 3 valid distractors (non-previous-answers).
+//   Earlier rounds have more distractor options since fewer answers exist yet.
+const MIN_VALID_ARTICLES = TOTAL_ROUNDS + 3;
+
+// ── Validated category list ──────────────────────────────
+// Generated by validate_categories.py — every entry here has
+// been confirmed to have enough image-rich articles for a full
+// 8-round game. Run the script again to refresh this list.
+// The seeded RNG picks one deterministically from this list each
+// day, so all players worldwide get the same category.
+//
+// REPLACE this array with the output of validate_categories.py
+let VALIDATED_CATEGORIES = [];
+
+/* ══════════════════════════════════════════════════════════
+   SEEDED RNG (Mulberry32) — deterministic from date seed
+══════════════════════════════════════════════════════════ */
+function mulberry32(seed) {
+  return function() {
+    seed |= 0; seed = seed + 0x6D2B79F5 | 0;
+    let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+
+function todaysSeed() {
+  const d = new Date();
+  return d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate();
+}
+
+function seededShuffle(arr, rng) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(rng() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+/* ══════════════════════════════════════════════════════════
+   STATE
+══════════════════════════════════════════════════════════ */
+let state = {
+  category: '',
+  rounds: [],        // [{target, distractors}] — all 8 pre-validated
+  currentRound: 0,
+  lives: MAX_LIVES,
+  score: 0,
+  blurLevel: 3,      // set per-round from ROUND_BLUR_LEVEL
+  answered: false,
+  history: [],       // 'correct' | 'wrong' per round
+};
+
+const BLUR_FILTERS = {
+  1: 'blur(12px) grayscale(30%)  brightness(0.95)',
+  2: 'blur(3px)  grayscale(0%)   brightness(1)',
+  3: 'none',
+};
+const BLUR_LABELS = { 1: '🔴 Hard', 2: '🟡 Medium', 3: '🟢 Easy' };
+const BLUR_SHORT  = { 1: 'Hard', 2: 'Medium', 3: 'Easy' };
+const DIFFICULTY_SECTION = { 3: 'Easy', 2: 'Medium', 1: 'Hard' };
+
+/* ══════════════════════════════════════════════════════════
+   WIKIPEDIA API
+══════════════════════════════════════════════════════════ */
+const API = 'https://en.wikipedia.org/w/api.php';
+
+// Fetch article members of a category (pages only, not subcategories)
+async function fetchCategoryMembers(category, limit = 500) {
+  const p = new URLSearchParams({
+    action:  'query',
+    list:    'categorymembers',
+    cmtitle: `Category:${category}`,
+    cmtype:  'page',
+    cmlimit: limit,
+    format:  'json',
+    origin:  '*',
+  });
+  const r = await fetch(`${API}?${p}`);
+  const d = await r.json();
+  return (d.query?.categorymembers ?? []).map(m => m.title);
+}
+
+// Fetch pageimages + extract for up to 50 titles at once
+async function fetchPageDetails(titles) {
+  const p = new URLSearchParams({
+    action:      'query',
+    prop:        'pageimages|extracts',
+    piprop:      'thumbnail',
+    pithumbsize: 600,
+    exsentences: 2,
+    exintro:     '1',
+    explaintext: '1',
+    titles:      titles.join('|'),
+    format:      'json',
+    origin:      '*',
+  });
+  const r = await fetch(`${API}?${p}`);
+  const d = await r.json();
+  return Object.values(d.query?.pages ?? {});
+}
+
+/* ══════════════════════════════════════════════════════════
+   IMAGE PROBE
+   Confirms a thumbnail URL is actually loadable as a bitmap
+   before we accept the article into the valid pool.
+   Rejects non-photo formats (SVG, OGG, PDF, TIF) without a
+   network round-trip, then uses a hidden Image element with a
+   3-second timeout to catch 404s, CORS failures, and anything
+   else that would cause renderImageOnCanvas to fail at play time.
+══════════════════════════════════════════════════════════ */
+function probeImage(src) {
+  const lower = src.toLowerCase();
+  if (/\.(svg|ogg|ogv|webm|pdf|tiff?)(\?|$)/.test(lower)) {
+    return Promise.resolve(false);
+  }
+  return new Promise(resolve => {
+    const img   = new Image();
+    img.crossOrigin = 'anonymous';
+    const timer = setTimeout(() => { img.src = ''; resolve(false); }, 8000);
+    img.onload  = () => { clearTimeout(timer); resolve(img.naturalWidth > 0); };
+    img.onerror = () => { clearTimeout(timer); resolve(false); };
+    img.src = src;
+  });
+}
+
+/* ══════════════════════════════════════════════════════════
+   PREFETCH & ROUND BUILDER
+
+   Pool layout after seeded shuffle:
+     indices 0..TOTAL_ROUNDS-1  → the 8 targets (one per round)
+     indices TOTAL_ROUNDS..end  → distractor-only extras
+
+   Distractor rule per round N:
+     • Must NOT be the current target
+     • Must NOT be any PREVIOUS round's target (player knows it)
+     • CAN be a FUTURE round's target (not revealed yet)
+     • CAN be any distractor-only extra
+
+   Image probe guarantee:
+     Every article in `valid` has been confirmed loadable by
+     probeImage() before being counted, so startRound will
+     never encounter a dead image at play time.
+══════════════════════════════════════════════════════════ */
+async function tryBuildRounds(category, members, rng, onStatus) {
+  const BATCH = 50;
+  const valid = [];
+
+  onStatus(`Checking images in "${category}"…`);
+
+  for (let i = 0; i < members.length && valid.length < MIN_VALID_ARTICLES; i += BATCH) {
+    const batch = members.slice(i, i + BATCH);
+    try {
+      const pages    = await fetchPageDetails(batch);
+      const withMeta = pages.filter(p =>
+        p.pageid > 0 &&
+        p.thumbnail?.source &&
+        p.extract &&
+        p.extract.trim().length > 20
+      );
+
+      // Probe all candidates in this batch concurrently
+      const probeResults = await Promise.all(
+        withMeta.map(p => probeImage(p.thumbnail.source))
+      );
+      const confirmed = withMeta.filter((_, idx) => probeResults[idx]);
+      valid.push(...confirmed);
+
+      onStatus(`Checking images in "${category}"… (${valid.length}/${MIN_VALID_ARTICLES} confirmed)`);
+    } catch (_) { /* skip failed batch */ }
+  }
+
+  if (valid.length < MIN_VALID_ARTICLES) return null;
+
+  // Seeded shuffle → same assignment for every player today
+  const shuffled = seededShuffle(valid, rng);
+  const targets  = shuffled.slice(0, TOTAL_ROUNDS);
+  const extras   = shuffled.slice(TOTAL_ROUNDS);
+
+  const rounds = [];
+  for (let i = 0; i < TOTAL_ROUNDS; i++) {
+    const target    = targets[i];
+    const forbidden = new Set([target.pageid, ...targets.slice(0, i).map(t => t.pageid)]);
+
+    const eligible = [
+      ...targets.slice(i + 1),  // future targets — player hasn't seen yet
+      ...extras,                 // distractor-only extras
+    ].filter(a => !forbidden.has(a.pageid));
+
+    if (eligible.length < 3) return null;
+
+    rounds.push({ target, distractors: eligible.slice(0, 3) });
+  }
+
+  return rounds;
+}
+
+/* ══════════════════════════════════════════════════════════
+   MAIN CATEGORY FINDER
+
+   Picks categories from VALIDATED_CATEGORIES in seeded order.
+   Each entry is pre-confirmed by validate_categories.py to have
+   enough image-rich articles, so this should succeed on the
+   first or second attempt in virtually all cases.
+
+   A small retry loop is kept as a safety net for rare cases
+   where Wikipedia's CDN is degraded and image probes fail
+   despite the category being genuinely valid.
+══════════════════════════════════════════════════════════ */
+async function findValidCategory(rng, onStatus) {
+  const candidates = seededShuffle([...VALIDATED_CATEGORIES], rng);
+
+  for (let i = 0; i < candidates.length; i++) {
+    const category = candidates[i];
+    onStatus(`Loading "${category}"…`);
+
+    try {
+      const members = await fetchCategoryMembers(category, 500);
+      if (members.length < MIN_VALID_ARTICLES) continue;
+
+      const roundRng = mulberry32(todaysSeed() ^ ((i + 1) * 0x9e3779b9));
+      const rounds   = await tryBuildRounds(category, members, roundRng, onStatus);
+      if (rounds) return { category, rounds };
+    } catch (_) { /* network hiccup — try next candidate */ }
+  }
+
+  throw new Error(
+    'Could not build a game from any validated category. ' +
+    'Wikipedia\'s API may be temporarily unavailable — please try again shortly.'
+  );
+}
+
+/* ══════════════════════════════════════════════════════════
+   CANVAS BLUR RENDERER
+══════════════════════════════════════════════════════════ */
+async function renderImageOnCanvas(src, level) {
+  return new Promise((resolve, reject) => {
+    const canvas = document.getElementById('blur-canvas');
+    const ctx    = canvas.getContext('2d');
+    const img    = new Image();
+    img.crossOrigin = 'anonymous';
+
+    img.onload = () => {
+      // draw to canvas
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.filter = BLUR_FILTERS[level];
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      ctx.filter = 'none';
+      resolve();
+    };
+    img.onerror = () => {
+      // Fall back to CSS approach if CORS blocks canvas
+      canvas.style.filter = BLUR_FILTERS[level];
+      const bg = document.createElement('img');
+      bg.src = src;
+      bg.onload = () => { ctx.drawImage(bg, 0, 0, canvas.width, canvas.height); resolve(); };
+      bg.onerror = reject;
+    };
+
+    img.src = src;
+    // Store src for re-render at different blur levels
+    canvas._currentSrc = src;
+  });
+}
+
+function updateBlur(level) {
+  const canvas = document.getElementById('blur-canvas');
+  const ctx    = canvas.getContext('2d');
+  const src    = canvas._currentSrc;
+  if (!src) return;
+
+  const img    = new Image();
+  img.crossOrigin = 'anonymous';
+  img.onload = () => {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.filter = BLUR_FILTERS[level];
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+    ctx.filter = 'none';
+  };
+  img.src = src;
+
+  document.getElementById('blur-level-badge').textContent = BLUR_SHORT[level];
+  document.getElementById('blur-label').textContent = BLUR_LABELS[level];
+}
+
+/* ══════════════════════════════════════════════════════════
+   UI HELPERS
+══════════════════════════════════════════════════════════ */
+function showError(msg) {
+  const b = document.getElementById('error-banner');
+  b.textContent = msg;
+  b.style.display = 'block';
+}
+
+function hideError() {
+  document.getElementById('error-banner').style.display = 'none';
+}
+
+function renderLives() {
+  const el = document.getElementById('lives-display');
+  el.innerHTML = '';
+  for (let i = 0; i < MAX_LIVES; i++) {
+    const h = document.createElement('span');
+    h.className = 'heart' + (i >= state.lives ? ' lost' : '');
+    h.textContent = '❤️';
+    el.appendChild(h);
+  }
+}
+
+function renderScore() {
+  document.getElementById('score-val').textContent = state.score;
+}
+
+function renderProgressDots(containerId) {
+  const el = document.getElementById(containerId);
+  el.innerHTML = '';
+
+  // Tier separators: [0-2]=easy, [3-5]=medium, [6-7]=hard
+  const tierColors = { 3: '#47ff8a', 2: '#ffe347', 1: '#ff6b6b' };
+
+  for (let i = 0; i < TOTAL_ROUNDS; i++) {
+    // Add a subtle spacer between tiers
+    if (i === 3 || i === 6) {
+      const sep = document.createElement('div');
+      sep.style.cssText = 'width:1px;height:8px;background:var(--border);align-self:center;margin:0 2px;';
+      el.appendChild(sep);
+    }
+
+    const d = document.createElement('div');
+    const blurLv = ROUND_BLUR_LEVEL[i];
+    let cls = 'dot';
+
+    if (i < state.currentRound || (containerId === 'result-dots')) {
+      // Completed round
+      const outcome = state.history[i];
+      if (outcome === 'correct') {
+        d.style.background = tierColors[blurLv];
+        d.style.boxShadow  = `0 0 6px ${tierColors[blurLv]}66`;
+      } else if (outcome === 'wrong') {
+        cls += ' done-wrong';
+      }
+      // else: not yet played (result screen padding)
+    } else if (i === state.currentRound) {
+      cls += ' current';
+      d.style.background = tierColors[blurLv];
+      d.style.opacity = '0.6';
+    }
+
+    d.className = cls;
+    el.appendChild(d);
+  }
+}
+
+function renderOptions(target, distractors) {
+  const grid = document.getElementById('options-grid');
+  grid.innerHTML = '';
+  const keys = ['A', 'B', 'C', 'D'];
+
+  // Combine + shuffle for display
+  const all  = [target, ...distractors];
+  const displayRng = mulberry32(todaysSeed() + state.currentRound * 997);
+  const shuffled = seededShuffle(all, displayRng);
+
+  shuffled.forEach((page, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'option-btn';
+    btn.dataset.pageid = page.pageid;
+    btn.innerHTML = `
+      <span class="option-key">${keys[i]}</span>
+      <span class="option-label">${page.title}</span>
+    `;
+    btn.addEventListener('click', () => handleAnswer(page, target, btn));
+    grid.appendChild(btn);
+  });
+}
+
+/* ══════════════════════════════════════════════════════════
+   ANSWER HANDLER
+══════════════════════════════════════════════════════════ */
+function handleAnswer(chosen, target, btn) {
+  if (state.answered) return;
+  state.answered = true;
+
+  const isCorrect = chosen.pageid === target.pageid;
+  const flash     = document.getElementById('result-flash');
+  const grid      = document.getElementById('options-grid');
+
+  // Disable all buttons
+  grid.querySelectorAll('.option-btn').forEach(b => {
+    b.disabled = true;
+    if (b.dataset.pageid == target.pageid) {
+      b.classList.add('correct-ans');
+    } else {
+      b.classList.add('dim');
+    }
+  });
+
+  if (isCorrect) {
+    const pts = POINTS_PER_LV[state.blurLevel];
+    state.score += pts;
+    state.history.push('correct');
+    renderScore();
+
+    flash.textContent = `+${pts}`;
+    flash.className = 'result-flash correct show';
+    document.getElementById('hint-text').innerHTML =
+      `<strong>✓ Correct!</strong> +${pts} points.`;
+  } else {
+    btn.classList.remove('dim');
+    btn.classList.add('wrong-ans');
+    state.lives--;
+    state.history.push('wrong');
+    renderLives();
+
+    flash.textContent = '✗ WRONG';
+    flash.className = 'result-flash wrong show';
+    document.getElementById('hint-text').innerHTML =
+      `<strong>✗ Wrong.</strong> The answer was <strong>${target.title}</strong>.`;
+
+    // Shake the arena
+    document.querySelector('.image-arena').classList.add('shake');
+    setTimeout(() => document.querySelector('.image-arena').classList.remove('shake'), 400);
+  }
+
+  // Show unblurred image briefly after answer
+  updateBlur(3);
+  document.getElementById('reveal-btn').disabled = true;
+
+  setTimeout(() => {
+    flash.classList.remove('show');
+  }, 800);
+
+  renderProgressDots('progress-dots');
+
+  // Show next button (or end game)
+  const nextBtn = document.getElementById('next-btn');
+  nextBtn.style.display = 'flex';
+
+  if (state.lives === 0 || state.currentRound + 1 >= TOTAL_ROUNDS) {
+    const last = state.lives === 0;
+    nextBtn.textContent = last ? 'See Results' : 'See Results ✓';
+  } else {
+    nextBtn.textContent = 'Next Round →';
+  }
+}
+
+/* ══════════════════════════════════════════════════════════
+   ROUND DISPLAY
+══════════════════════════════════════════════════════════ */
+function showLoading(show, msg) {
+  const el  = document.getElementById('loading-overlay');
+  const sub = document.getElementById('loading-sub');
+  el.style.display = show ? 'flex' : 'none';
+  if (msg) {
+    const isScan = msg.includes('Checking') || msg.includes('Scanning') ||
+                   msg.includes('confirmed') || msg.includes('Exploring');
+    document.getElementById('loading-msg').textContent = isScan ? 'Building today\'s game…' : msg;
+    if (sub) sub.textContent = isScan ? msg : '';
+  }
+}
+
+async function startRound() {
+  if (state.currentRound >= TOTAL_ROUNDS || state.lives <= 0) {
+    showResults();
+    return;
+  }
+
+  // Determine this round's starting blur level from the progression map
+  const roundBlur = ROUND_BLUR_LEVEL[state.currentRound];
+  state.blurLevel  = roundBlur;
+  state.answered   = false;
+
+  const nextBtn   = document.getElementById('next-btn');
+  const revealBtn = document.getElementById('reveal-btn');
+  nextBtn.style.display = 'none';
+
+  // Reveal only possible if not already at hardest (LV1)
+  revealBtn.disabled = (roundBlur === 1);
+  revealBtn.textContent = roundBlur === 1
+    ? '🔒 Max blur'
+    : `🔍 Reveal (-${REVEAL_COST} pts)`;
+
+  document.getElementById('hint-text').textContent = 'Choose the correct article from the options above.';
+  document.getElementById('blur-level-badge').textContent = BLUR_SHORT[roundBlur];
+  document.getElementById('blur-label').textContent = BLUR_LABELS[roundBlur];
+  renderProgressDots('progress-dots');
+
+  showLoading(true, 'Loading round…');
+
+  // Show difficulty transition banner when entering a new tier
+  const prevBlur = state.currentRound > 0 ? ROUND_BLUR_LEVEL[state.currentRound - 1] : roundBlur;
+  if (roundBlur < prevBlur) {
+    const tierName = BLUR_SHORT[roundBlur];
+    const banner = document.getElementById('hint-text');
+    banner.innerHTML = `<strong>🔺 Difficulty up — ${tierName} rounds begin!</strong>`;
+    // Will be overwritten once image loads
+  }
+
+  try {
+    const round = state.rounds[state.currentRound];
+    await renderImageOnCanvas(round.target.thumbnail.source, roundBlur);
+    // Hide the difficulty-up banner now that the image is ready
+    document.getElementById('hint-text').textContent = 'Choose the correct article from the options above.';
+    renderOptions(round.target, round.distractors);
+    showLoading(false);
+  } catch (e) {
+    // All images were pre-validated — this should not happen.
+    // If it does (e.g. network dropped mid-game), show a hard error
+    // rather than silently skipping rounds and producing a short game.
+    showLoading(false);
+    showError('Image failed to load unexpectedly. Check your connection and reload.');
+  }
+}
+
+/* ══════════════════════════════════════════════════════════
+   RESULTS SCREEN
+══════════════════════════════════════════════════════════ */
+function showResults() {
+  document.getElementById('game-screen').style.display  = 'none';
+  document.getElementById('results-screen').style.display = 'flex';
+
+  const correct = state.history.filter(h => h === 'correct').length;
+
+  document.getElementById('result-title').textContent =
+    state.lives === 0 ? 'Game Over' : 'Challenge Complete!';
+  document.getElementById('result-score-big').textContent = state.score;
+  document.getElementById('result-sub').textContent =
+    `You got ${correct} out of ${state.history.length} right in the "${state.category}" category.`;
+
+  // Copy progress dots
+  state.currentRound = state.history.length; // ensure dots render correctly
+  renderProgressDots('result-dots');
+}
+
+/* ══════════════════════════════════════════════════════════
+   SHARE TEXT
+══════════════════════════════════════════════════════════ */
+function buildShareText() {
+  const d    = new Date();
+  const date = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  const correct = state.history.filter(h => h === 'correct').length;
+
+  const diffEmoji = { 3: '🟢', 2: '🟡', 1: '🔴' };
+  const icons = state.history.map((h, i) => {
+    const lv = ROUND_BLUR_LEVEL[i] ?? 3;
+    return h === 'correct' ? diffEmoji[lv] : '⬛';
+  }).join('');
+
+  return `WikiBlur ${date}\n📂 ${state.category}\n${icons}\nScore: ${state.score} (${correct}/${state.history.length})\n🟢Easy 🟡Medium 🔴Hard\nPlay: https://yourname.github.io/wikiblur`;
+}
+
+/* ══════════════════════════════════════════════════════════
+   GAME INIT
+══════════════════════════════════════════════════════════ */
+async function initGame() {
+  hideError();
+  document.getElementById('intro-screen').style.display    = 'none';
+  document.getElementById('game-screen').style.display     = 'flex';
+  document.getElementById('results-screen').style.display  = 'none';
+
+  showLoading(true, 'Finding today\'s category…');
+
+  try {
+    // Seeded RNG from today's date — same sequence for all players worldwide
+    const rng = mulberry32(todaysSeed());
+
+    // Find a valid category with enough image-articles for all 8 rounds
+    const { category, rounds } = await findValidCategory(rng, (msg) => {
+      showLoading(true, msg);
+    });
+
+    state.category     = category;
+    state.rounds       = rounds;
+    state.lives        = MAX_LIVES;
+    state.score        = 0;
+    state.currentRound = 0;
+    state.history      = [];
+
+    document.getElementById('category-display').textContent = category;
+
+    renderLives();
+    renderScore();
+    showLoading(false);
+    startRound();
+
+  } catch (e) {
+    showLoading(false);
+    showError(`⚠ ${e.message}`);
+    document.getElementById('game-screen').style.display = 'none';
+    document.getElementById('intro-screen').style.display = 'flex';
+  }
+}
+
+/* ══════════════════════════════════════════════════════════
+   EVENT LISTENERS
+══════════════════════════════════════════════════════════ */
+document.getElementById('start-btn').addEventListener('click', initGame);
+
+document.getElementById('next-btn').addEventListener('click', () => {
+  state.currentRound++;
+  if (state.currentRound >= TOTAL_ROUNDS || state.lives <= 0) {
+    showResults();
+  } else {
+    startRound();
+  }
+});
+
+document.getElementById('reveal-btn').addEventListener('click', () => {
+  if (state.answered) return;
+  // Reveal = reduce blur by one step (increase level number toward 3 = clearest)
+  // Hard rounds start at LV1, medium at LV2, easy at LV3 (already max clarity)
+  if (state.blurLevel >= 3) return;
+  state.score = Math.max(0, state.score - REVEAL_COST);
+  state.blurLevel++;
+  renderScore();
+  updateBlur(state.blurLevel);
+
+  if (state.blurLevel >= 3) {
+    document.getElementById('reveal-btn').disabled = true;
+    document.getElementById('reveal-btn').textContent = '🔓 Fully revealed';
+  } else {
+    document.getElementById('reveal-btn').textContent = `🔍 Reveal (-${REVEAL_COST} pts)`;
+  }
+  document.getElementById('hint-text').textContent =
+    `Blur reduced to ${BLUR_SHORT[state.blurLevel]}. Score penalty: -${REVEAL_COST} pts.`;
+});
+
+document.getElementById('share-btn').addEventListener('click', () => {
+  const text = buildShareText();
+  navigator.clipboard.writeText(text).then(() => {
+    const n = document.getElementById('share-notice');
+    n.textContent = '✓ Copied to clipboard!';
+    setTimeout(() => { n.textContent = ''; }, 2500);
+  });
+});
+
+// Keyboard shortcuts for options (A/B/C/D)
+document.addEventListener('keydown', e => {
+  if (state.answered) return;
+  const map = { a: 0, b: 1, c: 2, d: 3 };
+  const idx = map[e.key.toLowerCase()];
+  if (idx === undefined) return;
+  const btns = document.querySelectorAll('.option-btn');
+  if (btns[idx] && !btns[idx].disabled) btns[idx].click();
+});
+
+/* ══════════════════════════════════════════════════════════
+   BOOT
+══════════════════════════════════════════════════════════ */
+(function boot() {
+  // Date tag
+  const d = new Date();
+  const dateStr = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  document.getElementById('date-tag').textContent = dateStr;
+
+  // Load validated categories from external JSON instead of hardcoding them
+  const startBtn = document.getElementById('start-btn');
+  startBtn.disabled = true;
+  fetch('valid_categories.json')
+    .then(r => {
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      return r.json();
+    })
+    .then(data => {
+      VALIDATED_CATEGORIES = Array.isArray(data) ? data : data.categories ?? [];
+      startBtn.disabled = false;
+    })
+    .catch(err => {
+      console.error('Failed to load valid_categories.json:', err);
+      showError('Could not load category list (valid_categories.json). Make sure the file is served alongside this page.');
+    });
+
+  // Belt-and-suspenders double-tap zoom prevention for iOS Safari
+  // (viewport meta handles most cases; this catches the rest)
+  let lastTap = 0;
+  document.addEventListener('touchend', e => {
+    const now = Date.now();
+    if (now - lastTap < 300) e.preventDefault();
+    lastTap = now;
+  }, { passive: false });
+})();
+</script>
+</body>
+</html>
