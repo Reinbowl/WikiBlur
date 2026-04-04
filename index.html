@@ -503,6 +503,20 @@
     flex-shrink: 0;
   }
   .share-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .home-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+    color: var(--muted);
+    font-family: 'DM Sans', sans-serif;
+    font-size: .8rem;
+    font-weight: 500;
+    padding: 8px 20px;
+    cursor: pointer;
+    transition: border-color .15s, color .15s;
+    flex-shrink: 0;
+  }
+  .home-btn:hover { border-color: var(--text); color: var(--text); }
   .share-notice {
     font-family: 'DM Mono', monospace;
     font-size: .65rem;
@@ -631,6 +645,7 @@
     <div class="progress-dots" id="result-dots"></div>
     <button class="share-btn" id="share-btn">📋 Copy Result</button>
     <div class="share-notice" id="share-notice"></div>
+    <button class="home-btn" id="home-btn">⬅ Back to Home</button>
   </div>
 </main>
 
@@ -706,7 +721,7 @@ let state = {
 };
 
 const BLUR_FILTERS = {
-  1: 'blur(8px)  grayscale(15%)  brightness(0.95)',
+  1: 'blur(12px) grayscale(30%)  brightness(0.95)',
   2: 'blur(3px)  grayscale(0%)   brightness(1)',
   3: 'none',
 };
@@ -1099,7 +1114,7 @@ function handleAnswer(chosen, target, btn) {
 
   // Show unblurred image briefly after answer
   updateBlur(3);
-  document.getElementById('reveal-btn').disabled = true;
+  document.getElementById('reveal-btn').style.display = 'none';
 
   setTimeout(() => {
     flash.classList.remove('show');
@@ -1149,11 +1164,10 @@ async function startRound() {
   const revealBtn = document.getElementById('reveal-btn');
   nextBtn.style.display = 'none';
 
-  // Reveal only possible if not already at hardest (LV1)
-  revealBtn.disabled = (roundBlur === 1);
-  revealBtn.textContent = roundBlur === 1
-    ? '🔒 Max blur'
-    : `🔍 Reveal (-${REVEAL_COST} pts)`;
+  // Reveal button: hidden on easy (no blur to remove), enabled on medium & hard
+  revealBtn.style.display = (roundBlur === 3) ? 'none' : 'inline-flex';
+  revealBtn.disabled = false;
+  revealBtn.textContent = `🔍 Reveal (-${REVEAL_COST} pts)`;
 
   document.getElementById('hint-text').textContent = 'Choose the correct article from the options above.';
   document.getElementById('blur-level-badge').textContent = BLUR_SHORT[roundBlur];
@@ -1282,22 +1296,25 @@ document.getElementById('next-btn').addEventListener('click', () => {
 
 document.getElementById('reveal-btn').addEventListener('click', () => {
   if (state.answered) return;
-  // Reveal = reduce blur by one step (increase level number toward 3 = clearest)
-  // Hard rounds start at LV1, medium at LV2, easy at LV3 (already max clarity)
-  if (state.blurLevel >= 3) return;
+  if (state.blurLevel >= 3) return; // already at no-blur
   state.score = Math.max(0, state.score - REVEAL_COST);
   state.blurLevel++;
   renderScore();
   updateBlur(state.blurLevel);
 
   if (state.blurLevel >= 3) {
-    document.getElementById('reveal-btn').disabled = true;
-    document.getElementById('reveal-btn').textContent = '🔓 Fully revealed';
+    // Fully revealed — hide the button
+    document.getElementById('reveal-btn').style.display = 'none';
   } else {
     document.getElementById('reveal-btn').textContent = `🔍 Reveal (-${REVEAL_COST} pts)`;
   }
   document.getElementById('hint-text').textContent =
     `Blur reduced to ${BLUR_SHORT[state.blurLevel]}. Score penalty: -${REVEAL_COST} pts.`;
+});
+
+document.getElementById('home-btn').addEventListener('click', () => {
+  document.getElementById('results-screen').style.display = 'none';
+  document.getElementById('intro-screen').style.display  = 'flex';
 });
 
 document.getElementById('share-btn').addEventListener('click', () => {
