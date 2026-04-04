@@ -466,6 +466,7 @@
     flex-shrink: 0;
   }
   .start-btn:hover { opacity: .88; }
+  .start-btn:disabled { opacity: .45; cursor: not-allowed; }
 
   /* ── Results screen ─────────────────────────────────────── */
   .result-title {
@@ -517,6 +518,148 @@
     flex-shrink: 0;
   }
   .home-btn:hover { border-color: var(--text); color: var(--text); }
+
+  /* ── Intro button row ───────────────────────────────────── */
+  .intro-btn-row {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    flex-shrink: 0;
+    width: 100%;
+    max-width: 420px;
+  }
+  .endless-btn {
+    background: #c0392b;
+    border: none;
+    border-radius: var(--r);
+    color: #fff;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 700;
+    font-size: .95rem;
+    padding: 13px 24px;
+    cursor: pointer;
+    letter-spacing: .04em;
+    transition: opacity .15s;
+    flex-shrink: 0;
+  }
+  .endless-btn:hover { opacity: .88; }
+  .endless-btn:disabled { opacity: .45; cursor: not-allowed; }
+
+  /* ── Difficulty select screen ───────────────────────────── */
+  #diff-screen {
+    flex: 1 1 0;
+    min-height: 0;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    gap: 16px;
+  }
+  .diff-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(2rem, 7vw, 3.5rem);
+    letter-spacing: 3px;
+    color: #c0392b;
+    line-height: 1;
+    flex-shrink: 0;
+  }
+  .diff-subtitle {
+    color: var(--muted);
+    font-size: .95rem;
+    flex-shrink: 0;
+  }
+  .diff-btn-group {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+    max-width: 320px;
+    flex-shrink: 0;
+  }
+  .diff-btn {
+    border: 2px solid var(--border);
+    border-radius: var(--r);
+    background: var(--surface);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 700;
+    font-size: 1rem;
+    padding: 14px 20px;
+    cursor: pointer;
+    text-align: left;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    transition: border-color .15s, background .15s;
+  }
+  .diff-btn:hover { background: rgba(255,255,255,.04); }
+  .diff-btn.easy:hover   { border-color: var(--correct); }
+  .diff-btn.medium:hover { border-color: #ffe347; }
+  .diff-btn.hard:hover   { border-color: #ff6b6b; }
+  .diff-btn-inner { display: flex; flex-direction: column; }
+  .diff-btn .diff-desc {
+    font-size: .75rem;
+    font-weight: 400;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+  .diff-btn-back {
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-family: 'DM Sans', sans-serif;
+    font-size: .85rem;
+    cursor: pointer;
+    text-decoration: underline;
+    flex-shrink: 0;
+  }
+  .diff-btn-back:hover { color: var(--text); }
+
+  /* ── Endless in-game stat pills ─────────────────────────── */
+  .endless-stats {
+    display: none;
+    align-items: center;
+    gap: 6px;
+  }
+  .endless-stat-pill {
+    font-family: 'DM Mono', monospace;
+    font-size: .72rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 99px;
+    padding: 3px 11px;
+    white-space: nowrap;
+  }
+
+  /* ── Endless results stats ──────────────────────────────── */
+  .endless-result-stats {
+    display: none;
+    gap: 20px;
+    flex-shrink: 0;
+  }
+  .endless-stat-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r);
+    padding: 14px 24px;
+    text-align: center;
+    min-width: 110px;
+  }
+  .endless-stat-box .stat-val {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 2.8rem;
+    line-height: 1;
+    color: var(--accent);
+  }
+  .endless-stat-box .stat-val.streak { color: #ff4f4f; }
+  .endless-stat-box .stat-label {
+    font-size: .7rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: .1em;
+    margin-top: 4px;
+  }
   .share-notice {
     font-family: 'DM Mono', monospace;
     font-size: .65rem;
@@ -595,19 +738,56 @@
       <div class="how-to-row"><span class="icon">❤️</span><div><strong>3 lives</strong> — a wrong guess costs a life. Lose all three and it's over.</div></div>
       <div class="how-to-row"><span class="icon">📅</span><div><strong>Daily reset</strong> — same category worldwide. New challenge tomorrow.</div></div>
     </div>
-    <button class="start-btn" id="start-btn">Start Today's Challenge</button>
+    <div class="intro-btn-row">
+      <button class="start-btn" id="start-btn">📅 Daily Challenge</button>
+      <button class="endless-btn" id="endless-btn" disabled><svg width="20" height="13" viewBox="0 0 24 14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" style="vertical-align:middle;margin-right:6px;position:relative;top:-1px"><path d="M12 7C10 4 7.5 2.5 5 2.5a4.5 4.5 0 0 0 0 9C7.5 11.5 10 10 12 7zm0 0c2 3 4.5 4.5 7 4.5a4.5 4.5 0 0 0 0-9C16.5 2.5 14 4 12 7z"/></svg>Endless</button>
+    </div>
+  </div>
+
+  <!-- ═══ DIFFICULTY SELECT SCREEN ══════════════════════════ -->
+  <div id="diff-screen">
+    <div class="diff-title">Endless Mode</div>
+    <p class="diff-subtitle">Choose your difficulty — it stays fixed the whole run.</p>
+    <div class="diff-btn-group">
+      <button class="diff-btn easy" data-level="3">
+        <span>🟢</span>
+        <div class="diff-btn-inner">
+          <span>Easy</span>
+          <span class="diff-desc">No blur — test your knowledge</span>
+        </div>
+      </button>
+      <button class="diff-btn medium" data-level="2">
+        <span>🟡</span>
+        <div class="diff-btn-inner">
+          <span>Medium</span>
+          <span class="diff-desc">Light blur — a proper challenge</span>
+        </div>
+      </button>
+      <button class="diff-btn hard" data-level="1">
+        <span>🔴</span>
+        <div class="diff-btn-inner">
+          <span>Hard</span>
+          <span class="diff-desc">Heavy blur — for the brave</span>
+        </div>
+      </button>
+    </div>
+    <button class="diff-btn-back" id="diff-back-btn">← Back to Home</button>
   </div>
 
   <!-- ═══ GAME SCREEN ═══════════════════════════════════════ -->
   <div id="game-screen" style="display:none;">
     <div class="status-bar fade-in">
       <div class="lives" id="lives-display"></div>
-      <div class="score-pill">Score: <span id="score-val">0</span></div>
+      <div class="score-pill" id="score-pill">Score: <span id="score-val">0</span></div>
+      <div class="endless-stats" id="endless-stats">
+        <div class="endless-stat-pill">✅ <span id="endless-correct-val">0</span></div>
+        <div class="endless-stat-pill">🔥 <span id="endless-streak-val">0</span></div>
+      </div>
       <div class="blur-badge" id="blur-label">🟢 Easy</div>
     </div>
 
     <div class="category-strip fade-in">
-      <span class="label">Today's Category</span>
+      <span class="label" id="category-label">Today's Category</span>
       <span class="cat-name" id="category-display">—</span>
     </div>
 
@@ -643,6 +823,16 @@
     <div class="result-score-big" id="result-score-big">0</div>
     <p class="result-sub" id="result-sub"></p>
     <div class="progress-dots" id="result-dots"></div>
+    <div class="endless-result-stats" id="endless-result-stats">
+      <div class="endless-stat-box">
+        <div class="stat-val" id="endless-result-correct">0</div>
+        <div class="stat-label">Total Correct</div>
+      </div>
+      <div class="endless-stat-box">
+        <div class="stat-val streak" id="endless-result-streak">0</div>
+        <div class="stat-label">Best Streak</div>
+      </div>
+    </div>
     <button class="share-btn" id="share-btn">📋 Copy Result</button>
     <div class="share-notice" id="share-notice"></div>
     <button class="home-btn" id="home-btn">⬅ Back to Home</button>
@@ -710,14 +900,20 @@ function seededShuffle(arr, rng) {
    STATE
 ══════════════════════════════════════════════════════════ */
 let state = {
+  mode: 'daily',       // 'daily' | 'endless'
   category: '',
-  rounds: [],        // [{target, distractors}] — all 8 pre-validated
+  rounds: [],          // [{target, distractors}]
   currentRound: 0,
   lives: MAX_LIVES,
   score: 0,
-  blurLevel: 3,      // set per-round from ROUND_BLUR_LEVEL
+  blurLevel: 3,        // set per-round from ROUND_BLUR_LEVEL (daily) or fixed (endless)
   answered: false,
-  history: [],       // 'correct' | 'wrong' per round
+  history: [],         // 'correct' | 'wrong' per round (daily only)
+  // endless-specific
+  endlessBlurLevel: 3,
+  endlessCorrect: 0,
+  endlessStreak: 0,
+  endlessBestStreak: 0,
 };
 
 const BLUR_FILTERS = {
@@ -1048,7 +1244,10 @@ function renderOptions(target, distractors) {
 
   // Combine + shuffle for display
   const all  = [target, ...distractors];
-  const displayRng = mulberry32(todaysSeed() + state.currentRound * 997);
+  const shuffleSeed = state.mode === 'endless'
+    ? (Date.now() ^ (Math.random() * 0xffffffff)) | 0
+    : todaysSeed() + state.currentRound * 997;
+  const displayRng = mulberry32(shuffleSeed);
   const shuffled = seededShuffle(all, displayRng);
 
   shuffled.forEach((page, i) => {
@@ -1087,20 +1286,39 @@ function handleAnswer(chosen, target, btn) {
 
   if (isCorrect) {
     const pts = POINTS_PER_LV[state.blurLevel];
-    state.score += pts;
-    state.history.push('correct');
-    renderScore();
 
-    flash.textContent = `+${pts}`;
+    if (state.mode === 'daily') {
+      state.score += pts;
+      state.history.push('correct');
+      renderScore();
+      flash.textContent = `+${pts}`;
+      document.getElementById('hint-text').innerHTML =
+        `<strong>✓ Correct!</strong> +${pts} points.`;
+    } else {
+      state.endlessCorrect++;
+      state.endlessStreak++;
+      if (state.endlessStreak > state.endlessBestStreak) {
+        state.endlessBestStreak = state.endlessStreak;
+      }
+      renderEndlessStats();
+      flash.textContent = '✓';
+      document.getElementById('hint-text').innerHTML =
+        `<strong>✓ Correct!</strong> Streak: ${state.endlessStreak} 🔥`;
+    }
+
     flash.className = 'result-flash correct show';
-    document.getElementById('hint-text').innerHTML =
-      `<strong>✓ Correct!</strong> +${pts} points.`;
   } else {
     btn.classList.remove('dim');
     btn.classList.add('wrong-ans');
     state.lives--;
-    state.history.push('wrong');
     renderLives();
+
+    if (state.mode === 'daily') {
+      state.history.push('wrong');
+    } else {
+      state.endlessStreak = 0;
+      renderEndlessStats();
+    }
 
     flash.textContent = '✗ WRONG';
     flash.className = 'result-flash wrong show';
@@ -1112,25 +1330,24 @@ function handleAnswer(chosen, target, btn) {
     setTimeout(() => document.querySelector('.image-arena').classList.remove('shake'), 400);
   }
 
-  // Show unblurred image briefly after answer
+  // Show unblurred image after answer
   updateBlur(3);
   document.getElementById('reveal-btn').style.display = 'none';
 
-  setTimeout(() => {
-    flash.classList.remove('show');
-  }, 800);
+  setTimeout(() => { flash.classList.remove('show'); }, 800);
 
-  renderProgressDots('progress-dots');
+  if (state.mode === 'daily') renderProgressDots('progress-dots');
 
-  // Show next button (or end game)
+  // Show next button
   const nextBtn = document.getElementById('next-btn');
   nextBtn.style.display = 'flex';
 
-  if (state.lives === 0 || state.currentRound + 1 >= TOTAL_ROUNDS) {
-    const last = state.lives === 0;
-    nextBtn.textContent = last ? 'See Results' : 'See Results ✓';
+  if (state.lives === 0) {
+    nextBtn.textContent = 'See Results';
+  } else if (state.mode === 'daily' && state.currentRound + 1 >= TOTAL_ROUNDS) {
+    nextBtn.textContent = 'See Results ✓';
   } else {
-    nextBtn.textContent = 'Next Round →';
+    nextBtn.textContent = state.mode === 'endless' ? 'Next Round →' : 'Next Round →';
   }
 }
 
@@ -1205,20 +1422,143 @@ async function startRound() {
    RESULTS SCREEN
 ══════════════════════════════════════════════════════════ */
 function showResults() {
-  document.getElementById('game-screen').style.display  = 'none';
+  document.getElementById('game-screen').style.display    = 'none';
   document.getElementById('results-screen').style.display = 'flex';
 
-  const correct = state.history.filter(h => h === 'correct').length;
+  if (state.mode === 'endless') {
+    document.getElementById('result-title').textContent    = state.lives === 0 ? 'Game Over' : 'Run Complete!';
+    document.getElementById('result-score-big').style.display = 'none';
+    document.getElementById('result-dots').style.display      = 'none';
+    document.getElementById('share-btn').style.display        = 'none';
+    document.getElementById('result-sub').textContent =
+      `You survived ${state.endlessCorrect + (state.lives === 0 ? 1 : 0)} rounds on ${BLUR_SHORT[state.endlessBlurLevel]} difficulty.`;
+    document.getElementById('endless-result-correct').textContent = state.endlessCorrect;
+    document.getElementById('endless-result-streak').textContent  = state.endlessBestStreak;
+    document.getElementById('endless-result-stats').style.display = 'flex';
+  } else {
+    const correct = state.history.filter(h => h === 'correct').length;
+    document.getElementById('result-title').textContent =
+      state.lives === 0 ? 'Game Over' : 'Challenge Complete!';
+    document.getElementById('result-score-big').textContent       = state.score;
+    document.getElementById('result-score-big').style.display     = '';
+    document.getElementById('result-dots').style.display          = '';
+    document.getElementById('share-btn').style.display            = '';
+    document.getElementById('endless-result-stats').style.display = 'none';
+    document.getElementById('result-sub').textContent =
+      `You got ${correct} out of ${state.history.length} right in the "${state.category}" category.`;
+    state.currentRound = state.history.length;
+    renderProgressDots('result-dots');
+  }
+}
 
-  document.getElementById('result-title').textContent =
-    state.lives === 0 ? 'Game Over' : 'Challenge Complete!';
-  document.getElementById('result-score-big').textContent = state.score;
-  document.getElementById('result-sub').textContent =
-    `You got ${correct} out of ${state.history.length} right in the "${state.category}" category.`;
+/* ══════════════════════════════════════════════════════════
+   ENDLESS MODE
+══════════════════════════════════════════════════════════ */
+function renderEndlessStats() {
+  document.getElementById('endless-correct-val').textContent = state.endlessCorrect;
+  document.getElementById('endless-streak-val').textContent  = state.endlessStreak;
+}
 
-  // Copy progress dots
-  state.currentRound = state.history.length; // ensure dots render correctly
-  renderProgressDots('result-dots');
+// Build a single round from a category: 1 target + 3 distractors
+async function buildOneEndlessRound(category, onStatus) {
+  const members = await fetchCategoryMembers(category, 200);
+  if (members.length < 4) return null;
+
+  // Random shuffle using current time so each round differs
+  const rng      = mulberry32((Date.now() ^ (Math.random() * 0xffffffff)) | 0);
+  const shuffled = seededShuffle(members, rng);
+
+  const BATCH = 50;
+  const valid = [];
+  for (let i = 0; i < shuffled.length && valid.length < 4; i += BATCH) {
+    const batch = shuffled.slice(i, i + BATCH);
+    try {
+      const pages    = await fetchPageDetails(batch);
+      const withMeta = pages.filter(p =>
+        p.pageid > 0 && p.thumbnail?.source && p.extract?.trim().length > 20
+      );
+      const probes     = await Promise.all(withMeta.map(p => probeImage(p.thumbnail.source)));
+      const confirmed  = withMeta.filter((_, idx) => probes[idx]);
+      valid.push(...confirmed);
+      if (onStatus) onStatus(`Checking images… (${Math.min(valid.length, 4)}/4 confirmed)`);
+    } catch (_) { /* skip failed batch */ }
+  }
+
+  if (valid.length < 4) return null;
+  return { target: valid[0], distractors: valid.slice(1, 4) };
+}
+
+async function startEndlessRound() {
+  state.answered  = false;
+  const blurLevel = state.endlessBlurLevel;
+  state.blurLevel = blurLevel;
+
+  const revealBtn = document.getElementById('reveal-btn');
+  const nextBtn   = document.getElementById('next-btn');
+  nextBtn.style.display   = 'none';
+  revealBtn.style.display = 'none'; // no reveal in endless
+
+  document.getElementById('hint-text').textContent        = 'Choose the correct article from the options above.';
+  document.getElementById('blur-level-badge').textContent = BLUR_SHORT[blurLevel];
+  document.getElementById('blur-label').textContent       = BLUR_LABELS[blurLevel];
+
+  showLoading(true, 'Loading next round…');
+
+  // Pick a random category
+  const rng        = mulberry32((Date.now() ^ (Math.random() * 0xffffffff)) | 0);
+  const candidates = seededShuffle([...VALIDATED_CATEGORIES], rng);
+
+  let round = null;
+  for (const category of candidates) {
+    try {
+      round = await buildOneEndlessRound(category, msg => showLoading(true, msg));
+      if (round) { state.category = category; break; }
+    } catch (_) { /* try next */ }
+  }
+
+  if (!round) {
+    showLoading(false);
+    showError('Could not load a round. Check your connection and try again.');
+    return;
+  }
+
+  state.rounds       = [round];
+  state.currentRound = 0;
+  document.getElementById('category-display').textContent = state.category;
+
+  try {
+    await renderImageOnCanvas(round.target.thumbnail.source, blurLevel);
+    renderOptions(round.target, round.distractors);
+    showLoading(false);
+  } catch (e) {
+    showLoading(false);
+    showError('Image failed to load. Check your connection.');
+  }
+}
+
+async function initEndless(blurLevel) {
+  hideError();
+  state.mode             = 'endless';
+  state.endlessBlurLevel = blurLevel;
+  state.lives            = MAX_LIVES;
+  state.endlessCorrect   = 0;
+  state.endlessStreak    = 0;
+  state.endlessBestStreak = 0;
+  state.answered         = false;
+
+  document.getElementById('diff-screen').style.display    = 'none';
+  document.getElementById('game-screen').style.display    = 'flex';
+  document.getElementById('results-screen').style.display = 'none';
+
+  // Swap score pill for endless stats, hide progress dots
+  document.getElementById('score-pill').style.display    = 'none';
+  document.getElementById('endless-stats').style.display = 'flex';
+  document.getElementById('progress-dots').style.display = 'none';
+  document.getElementById('category-label').textContent  = 'Category';
+
+  renderLives();
+  renderEndlessStats();
+  await startEndlessRound();
 }
 
 /* ══════════════════════════════════════════════════════════
@@ -1258,6 +1598,7 @@ async function initGame() {
       showLoading(true, msg);
     });
 
+    state.mode         = 'daily';
     state.category     = category;
     state.rounds       = rounds;
     state.lives        = MAX_LIVES;
@@ -1266,6 +1607,10 @@ async function initGame() {
     state.history      = [];
 
     document.getElementById('category-display').textContent = category;
+    document.getElementById('category-label').textContent   = 'Today\'s Category';
+    document.getElementById('score-pill').style.display     = '';
+    document.getElementById('endless-stats').style.display  = 'none';
+    document.getElementById('progress-dots').style.display  = '';
 
     renderLives();
     renderScore();
@@ -1286,11 +1631,19 @@ async function initGame() {
 document.getElementById('start-btn').addEventListener('click', initGame);
 
 document.getElementById('next-btn').addEventListener('click', () => {
-  state.currentRound++;
-  if (state.currentRound >= TOTAL_ROUNDS || state.lives <= 0) {
-    showResults();
+  if (state.mode === 'endless') {
+    if (state.lives <= 0) {
+      showResults();
+    } else {
+      startEndlessRound();
+    }
   } else {
-    startRound();
+    state.currentRound++;
+    if (state.currentRound >= TOTAL_ROUNDS || state.lives <= 0) {
+      showResults();
+    } else {
+      startRound();
+    }
   }
 });
 
@@ -1314,7 +1667,24 @@ document.getElementById('reveal-btn').addEventListener('click', () => {
 
 document.getElementById('home-btn').addEventListener('click', () => {
   document.getElementById('results-screen').style.display = 'none';
-  document.getElementById('intro-screen').style.display  = 'flex';
+  document.getElementById('intro-screen').style.display   = 'flex';
+});
+
+document.getElementById('endless-btn').addEventListener('click', () => {
+  document.getElementById('intro-screen').style.display = 'none';
+  document.getElementById('diff-screen').style.display  = 'flex';
+});
+
+document.getElementById('diff-back-btn').addEventListener('click', () => {
+  document.getElementById('diff-screen').style.display  = 'none';
+  document.getElementById('intro-screen').style.display = 'flex';
+});
+
+document.querySelectorAll('.diff-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const level = parseInt(btn.dataset.level, 10);
+    initEndless(level);
+  });
 });
 
 document.getElementById('share-btn').addEventListener('click', () => {
@@ -1356,6 +1726,7 @@ document.addEventListener('keydown', e => {
     .then(data => {
       VALIDATED_CATEGORIES = Array.isArray(data) ? data : data.categories ?? [];
       startBtn.disabled = false;
+      document.getElementById('endless-btn').disabled = false;
     })
     .catch(err => {
       console.error('Failed to load valid_categories.json:', err);

@@ -39,6 +39,22 @@ Using the Reveal costs **−5 pts**. Maximum possible score is **75 pts**.
 
 ---
 
+## Endless Mode
+ 
+A separate mode where the goal is to survive as long as possible across randomly selected categories.
+ 
+**Starting a run:** Press the **Endless** button and choose a difficulty — Easy, Medium, or Hard (same blur levels as the daily challenge). The selected difficulty applies to the entire run with no escalation and no Reveal option.
+ 
+**Each round:** A random valid category is chosen, and 4 articles from it are presented as options. Every round uses a different category.
+ 
+**Lives:** You start with 3 lives. A wrong answer costs one life — lose all three and the run ends.
+ 
+**Trackers:**
+- ✅ **Total rounds** — how many rounds you survived for that run
+- 🔥 **Longest streak** — the longest sequence of correct answers without losing a life
+
+---
+
 ## Files
 
 | File | Description |
