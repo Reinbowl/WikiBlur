@@ -19,9 +19,9 @@ WikiBlur is a daily browser-based guessing game. Each day, everyone worldwide ge
 
 - **3 lives** — each wrong answer costs one life. Lose all three and the game ends early.
 - **8 rounds** split into three difficulty tiers:
-  - 🟢 **Easy** (Rounds 1–3) — minimal blur, 5 pts per correct answer
-  - 🟡 **Medium** (Rounds 4–6) — more blur, 10 pts per correct answer
-  - 🔴 **Hard** (Rounds 7–8) — heavy blur, 15 pts per correct answer
+  - 🟢 **Easy** (Rounds 1–3) — no blur, 5 pts per correct answer
+  - 🟡 **Medium** (Rounds 4–6) — minimal blur, 10 pts per correct answer
+  - 🔴 **Hard** (Rounds 7–8) — more blur, 15 pts per correct answer
 - **Reveal** — on Medium and Hard rounds, spend 5 pts to reduce the blur and get a better look.
 - **Daily reset** — the category and image assignments reset at midnight. Come back tomorrow for a new challenge!
 
