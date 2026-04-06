@@ -64,6 +64,7 @@ USER_AGENT = (
 
 BAD_EXT = re.compile(r'\.(svg|ogg|ogv|webm|pdf|tiff?)(\?|$)', re.IGNORECASE)
 
+# version 1
 PARENT_CATEGORIES = [
     "Mammals", "Birds", "Reptiles", "Amphibians", "Fish",
     "Insects", "Arachnids", "Molluscs", "Crustaceans",
@@ -83,6 +84,51 @@ PARENT_CATEGORIES = [
     "Olympic sports", "Martial arts", "Gymnasts",
     "Musical instruments", "Guitars", "Drums",
     "Coins", "Stamps", "Flags",
+]
+
+# version 2
+PARENT_CATEGORIES = [
+    # Nature / Biology
+    "Wildflowers", "Grasses", "Coral reefs", "Seaweed",
+    "Butterflies and moths", "Beetles",
+    "Birds of prey", "Songbirds",
+    "Rodents", "Marsupials", "Whales", "Seals and sea lions",
+
+    # Geography / Natural Features
+    "Canyons", "Glaciers", "Cliffs", "Hot springs", "Geysers",
+    "Rainforests", "Savannas", "Tundra", "Wetlands",
+    "Peninsulas", "Deltas", "Oases",
+
+    # Architecture / Man-made
+    "Skyscrapers", "Temples", "Mosques", "Pagodas",
+    "Fortresses", "Palaces", "Museums", "Libraries",
+    "Universities", "Stadiums", "Airports", "Harbors",
+
+    # Arts / Culture
+    "Murals", "Street art", "Illustrations", "Calligraphy",
+    "Ceramics", "Jewelry", "Fashion", "Costumes",
+    "Dance", "Theatre",
+
+    # Technology / Engineering
+    "Computers", "Supercomputers", "Robots", "Drones",
+    "Submarines", "Space stations", "Microscopes",
+    "Scientific instruments", "Engines",
+
+    # Earth Science / Weather
+    "Rock formations", "Caves", "Soil types",
+    "Earthquakes", "Clouds", "Storms", "Rainbows",
+
+    # Sports / Activities
+    "Ball games", "Winter sports", "Water sports",
+    "Extreme sports", "Track and field", "Cycling", "Team sports",
+
+    # Music
+    "Pianos", "Violins", "Wind instruments",
+    "Orchestras", "Bands", "Music festivals",
+
+    # Objects / Collectibles
+    "Posters", "Maps", "Books", "Magazines",
+    "Toys", "Board games", "Clocks", "Watches",
 ]
 
 
