@@ -1425,7 +1425,7 @@ function showResults() {
     document.getElementById('result-title').textContent    = state.lives === 0 ? 'Game Over' : 'Run Complete!';
     document.getElementById('result-score-big').style.display = 'none';
     document.getElementById('result-dots').style.display      = 'none';
-    document.getElementById('share-btn').style.display        = 'none';
+    document.getElementById('share-btn').style.display        = '';
     document.getElementById('result-sub').textContent =
       `You survived ${state.endlessCorrect + (state.lives === 0 ? 1 : 0)} rounds on ${BLUR_SHORT[state.endlessBlurLevel]} difficulty.`;
     document.getElementById('endless-result-correct').textContent = state.endlessCorrect;
@@ -1560,18 +1560,31 @@ async function initEndless(blurLevel) {
 /* ══════════════════════════════════════════════════════════
    SHARE TEXT
 ══════════════════════════════════════════════════════════ */
-function buildShareText() {
-  const d    = new Date();
-  const date = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-  const correct = state.history.filter(h => h === 'correct').length;
+function formatShareDate() {
+  const d = new Date();
+  const months = ['January','February','March','April','May','June',
+                  'July','August','September','October','November','December'];
+  return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
+}
 
+function buildShareText() {
+  const date    = formatShareDate();
+  const correct = state.history.filter(h => h === 'correct').length;
   const diffEmoji = { 3: '🟢', 2: '🟡', 1: '🔴' };
   const icons = state.history.map((h, i) => {
     const lv = ROUND_BLUR_LEVEL[i] ?? 3;
-    return h === 'correct' ? diffEmoji[lv] : '⬛';
+    return h === 'correct' ? diffEmoji[lv] : '❌';
   }).join('');
 
-  return `WikiBlur ${date}\n📂 ${state.category}\n${icons}\nScore: ${state.score} (${correct}/${state.history.length})\n🟢Easy 🟡Medium 🔴Hard\nPlay: https://yourname.github.io/wikiblur`;
+  return `WikiBlur — ${date}\n📂 ${state.category}\n${icons}\nScore: ${state.score} (${correct}/${state.history.length})\n🟢Easy 🟡Medium 🔴Hard\nTest your knowledge\nhttps://reinbowl.github.io/WikiBlur`;
+}
+
+function buildEndlessShareText() {
+  const date       = formatShareDate();
+  const diffLabel  = BLUR_SHORT[state.endlessBlurLevel];
+  const diffEmoji  = { 1: '🔴', 2: '🟡', 3: '🟢' }[state.endlessBlurLevel];
+
+  return `WikiBlur Endless\n${diffEmoji} ${diffLabel} difficulty\n✅ ${state.endlessCorrect} correct  🔥 Best streak: ${state.endlessBestStreak}\nTest your knowledge\nhttps://reinbowl.github.io/WikiBlur`;
 }
 
 /* ══════════════════════════════════════════════════════════
@@ -1684,7 +1697,7 @@ document.querySelectorAll('.diff-btn').forEach(btn => {
 });
 
 document.getElementById('share-btn').addEventListener('click', () => {
-  const text = buildShareText();
+  const text = state.mode === 'endless' ? buildEndlessShareText() : buildShareText();
   navigator.clipboard.writeText(text).then(() => {
     const n = document.getElementById('share-notice');
     n.textContent = '✓ Copied to clipboard!';
