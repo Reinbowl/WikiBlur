@@ -1481,7 +1481,11 @@ async function buildOneEndlessRound(category, onStatus) {
   }
 
   if (valid.length < 4) return null;
-  return { target: valid[0], distractors: valid.slice(1, 4) };
+
+  // Re-shuffle the confirmed pool
+  const pickRng    = mulberry32((Date.now() ^ (Math.random() * 0xffffffff)) | 0);
+  const finalPicks = seededShuffle(valid, pickRng);
+  return { target: finalPicks[0], distractors: finalPicks.slice(1, 4) };
 }
 
 async function startEndlessRound() {
