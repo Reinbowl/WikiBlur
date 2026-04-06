@@ -1047,10 +1047,10 @@ async function tryBuildRounds(category, members, rng, onStatus) {
     const target    = targets[i];
     const forbidden = new Set([target.pageid, ...targets.slice(0, i).map(t => t.pageid)]);
 
-    const eligible = [
+    const eligible = seededShuffle([
       ...targets.slice(i + 1),  // future targets — player hasn't seen yet
       ...extras,                 // distractor-only extras
-    ].filter(a => !forbidden.has(a.pageid));
+    ].filter(a => !forbidden.has(a.pageid)), mulberry32(todaysSeed() ^ ((i + 7) * 0xd3a1b4c9)));
 
     if (eligible.length < 3) return null;
 
@@ -1242,13 +1242,9 @@ function renderOptions(target, distractors) {
   grid.innerHTML = '';
   const keys = ['A', 'B', 'C', 'D'];
 
-  // Combine + shuffle for display
-  const all  = [target, ...distractors];
-  const shuffleSeed = state.mode === 'endless'
-    ? (Date.now() ^ (Math.random() * 0xffffffff)) | 0
-    : todaysSeed() + state.currentRound * 997;
-  const displayRng = mulberry32(shuffleSeed);
-  const shuffled = seededShuffle(all, displayRng);
+  // Combine + shuffle for display — always random so button position is never predictable
+  const all     = [target, ...distractors];
+  const shuffled = all.slice().sort(() => Math.random() - 0.5);
 
   shuffled.forEach((page, i) => {
     const btn = document.createElement('button');
